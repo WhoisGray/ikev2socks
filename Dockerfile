@@ -1,21 +1,26 @@
-FROM archlinux:latest
+# 🐧 Alpine‑based production Dockerfile for IKEv2 → SOCKS5
 
-# 设置清华大学的 Arch Linux 镜像源
-RUN echo "Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
+FROM alpine:3.22
 
-# 更新包数据库
-RUN pacman -Syu --noconfirm
-
-# 安装
-RUN pacman -S --noconfirm strongswan gost
-
-# 清理缓存，减小镜像体积
-RUN pacman -Scc --noconfirm
-
-ADD entrypoint.sh /entrypoint.sh
-
-# IPsec 超时时长
+# Set env
 ENV TIMEOUT=60
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
+# Install strongSwan + gost + basic utils
+RUN apk update && \
+    apk add --no-cache \
+      strongswan \
+      gost \
+      iproute2 \
+      iptables && \
+    rm -rf /var/cache/apk/*
+
+# Copy entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose SOCKS port
 EXPOSE 1080
+
 ENTRYPOINT ["/entrypoint.sh"]
