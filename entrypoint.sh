@@ -1,89 +1,89 @@
 #!/bin/bash
 
 function up_ip_sec() {
-    # 成功标识
+    # Success flag
     local success=0
-    # 遍历所有 conn
+    # Iterate through all conn entries
     while IFS= read -r line; do
 
-        # conn 名称
+        # conn name
         local conn_name=$(echo "$line" | awk '{print $2}')
 
-        echo "IPSec 开始连接 $conn_name（超时时间 $TIMEOUT 秒）"
+        echo "IPSec starting connection $conn_name (timeout $TIMEOUT seconds)"
 
-        # 连接 vpn
+        # Connect VPN
         ipsec up "$conn_name" &
 
-        # 计时器
+        # Timer
         local timer=0
-        # 检测 IPSec 连接状态
+        # Check IPSec connection status
         while true; do
-            # 使用 status 命令检查连接状态
+            # Use status command to check connection
             if ipsec status | grep -q "ESTABLISHED"; then
-                echo "IPSec 连接 $conn_name 成功！"
+                echo "IPSec connection $conn_name succeeded!"
                 success=1
                 break
             fi
-            echo "IPSec 连接 $conn_name 中，$timer 秒"
-            # 如果超时，则退出循环
+            echo "IPSec connecting $conn_name, $timer seconds elapsed"
+            # Exit loop if timeout
             if [ $timer -ge $TIMEOUT ]; then
-                echo "IPSec 连接 $conn_name 超时！"
+                echo "IPSec connection $conn_name timed out!"
                 ipsec down "$conn_name"
                 break
             fi
-            # 等待一秒钟再进行下一次检测
+            # Wait one second before next check
             sleep 1
-            # 增加计时器
+            # Increment timer
             ((timer++))
         done
 
-        # 连接成功结束循环
+        # Break loop if connection succeeded
         if [ $success -eq 1 ]; then
             break
         fi
     done < <(grep '^conn' "/etc/ipsec.conf")
-    # 返回结果
+    # Return result
     return $success
 }
 
 function health_check() {
-    # 循环检查状态
+    # Continuously check status
     while true; do
         if ipsec status | grep -q "ESTABLISHED"; then
-            echo "IPSec 连接正常！"
-            # 存在连接，等待10秒钟再进行下一次检测
+            echo "IPSec connection is healthy!"
+            # Connection exists, wait 10 seconds before next check
             sleep 10
         else
-            echo "IPSec 连接丢失！"
-            # 重新连接
+            echo "IPSec connection lost!"
+            # Reconnect
             up_ip_sec
         fi
     done
 }
 
 
-# 拷贝系统证书
+# Copy system certificates
 cp -r /etc/ssl/certs/* /etc/ipsec.d/cacerts
 
-# 后台启动 IPSec。--nofork 不开启新进程，实现日志打印到当前进程
+# Start IPSec in the background. --nofork avoids starting a new process, logs to current process
 ipsec start --nofork &
 
-# 等待 10 秒，等 IPSec 启动成功
+# Wait 10 seconds for IPSec to start successfully
 sleep 10
 
-# 连接 IPSec
+# Connect IPSec
 up_ip_sec
-# 成功标识
+# Success flag
 success=$?
 
 if [ $success -eq 0 ]; then
-    # 连接失败
+    # Connection failed
     exit 1
 fi
 
-# 连接成功，启动健康检查
+# Connection succeeded, start health check
 health_check &
 
-echo "启动 Gost socks5"
-# 启动 gost socks5
-exec gost -L socks5://:1080
+echo "Starting Gost socks5"
+# با network_mode: host پورت روی خود host باز است (پیش‌فرض 10809 برای سازگاری با قبل)
+exec gost -L "socks5://:${SOCKS5_PORT:-1080}"

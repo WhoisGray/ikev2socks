@@ -1,6 +1,6 @@
 # 🐧 Alpine‑based production Dockerfile for IKEv2 → SOCKS5
 
-FROM alpine:3.22
+FROM docker.arvancloud.ir/ghost:6.17.0-alpine
 
 # Set env
 ENV TIMEOUT=60
@@ -11,7 +11,6 @@ ENV LC_ALL=C.UTF-8
 RUN apk update && \
     apk add --no-cache \
       strongswan \
-      gost \
       iproute2 \
       iptables && \
     rm -rf /var/cache/apk/*

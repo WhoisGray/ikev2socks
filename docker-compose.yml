@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  ikev2socks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ikev2socks
+    network_mode: host  # IPSec (UDP 500/4500) needs host network so server replies reach the container
+    cap_add:
+      - NET_ADMIN
+    environment:
+      TIMEOUT: 120
+      SOCKS5_PORT: 10809  # با host network پورت مستقیم روی host است (ports: نادیده گرفته می‌شود)
+    volumes:
+      - ./ipsec.conf:/etc/ipsec.conf:ro
+      - ./ipsec.secrets:/etc/ipsec.secrets:ro
+    restart: unless-stopped
