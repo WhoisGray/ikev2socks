@@ -1,8 +1,11 @@
 # IKEv2 (strongSwan) -> SOCKS5 (gost)
 #
 # Debian slim is used (not Alpine) so the full set of EAP plugins is available:
-#   - eap-mschapv2  (libcharon-extauth-plugins) -- the method the VPN server requests
-#   - eap-identity  (libcharon-extra-plugins)   -- for the eap_identity= line
+#   - eap-mschapv2  (libcharon-extauth-plugins)     -- the method the VPN server requests
+#   - eap-identity  (libcharon-extra-plugins)       -- for the eap_identity= line
+#   - openssl       (libstrongswan-standard-plugins)-- provides MD4 + DES that
+#       eap-mschapv2 needs; without it eap-mschapv2 fails to load. Under OpenSSL 3
+#       MD4/single-DES live in the "legacy" provider, which we enable below.
 
 ARG BASE_IMAGE=docker.arvancloud.ir/debian:bookworm-slim
 FROM ${BASE_IMAGE}
@@ -37,11 +40,16 @@ RUN set -eux; \
         strongswan-starter \
         libcharon-extra-plugins \
         libcharon-extauth-plugins \
+        libstrongswan-standard-plugins \
         iproute2 \
         iptables \
         ca-certificates \
         curl; \
     update-ca-certificates; \
+    # Enable the OpenSSL 3 "legacy" provider so the strongSwan openssl plugin can
+    # offer MD4 + single-DES (required by EAP-MSCHAPv2). default stays active too.
+    printf 'openssl_conf = openssl_init\n[openssl_init]\nproviders = provider_sect\n[provider_sect]\ndefault = default_sect\nlegacy = legacy_sect\n[default_sect]\nactivate = 1\n[legacy_sect]\nactivate = 1\n' \
+        > /etc/ssl/openssl.cnf; \
     # Fetch the gost binary (no distro package exists for it); match the image arch
     case "$(dpkg --print-architecture)" in \
         amd64) GOST_ARCH=amd64 ;; \
