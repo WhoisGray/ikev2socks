@@ -1,8 +1,8 @@
 # IKEv2 (strongSwan) -> SOCKS5 (gost)
 #
-# Debian slim is used (not Alpine) because Alpine's strongSwan build does NOT
-# ship the `eap-gtc` plugin, which ipsec.conf relies on (leftauth=eap-gtc).
-# Debian's libcharon-extra-plugins provides eap-gtc and friends.
+# Debian slim is used (not Alpine) so the full set of EAP plugins is available:
+#   - eap-mschapv2  (libcharon-extauth-plugins) -- the method the VPN server requests
+#   - eap-identity  (libcharon-extra-plugins)   -- for the eap_identity= line
 
 ARG BASE_IMAGE=docker.arvancloud.ir/debian:bookworm-slim
 FROM ${BASE_IMAGE}
@@ -36,6 +36,7 @@ RUN set -eux; \
         strongswan \
         strongswan-starter \
         libcharon-extra-plugins \
+        libcharon-extauth-plugins \
         iproute2 \
         iptables \
         ca-certificates \
