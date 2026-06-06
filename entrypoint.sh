@@ -62,8 +62,9 @@ function health_check() {
 }
 
 
-# Copy system certificates
-cp -r /etc/ssl/certs/* /etc/ipsec.d/cacerts
+# Copy system CA certificates so strongSwan can verify the server's pubkey (rightauth=pubkey)
+mkdir -p /etc/ipsec.d/cacerts
+cp -r /etc/ssl/certs/* /etc/ipsec.d/cacerts/ 2>/dev/null || true
 
 # Start IPSec in the background. --nofork avoids starting a new process, logs to current process
 ipsec start --nofork &

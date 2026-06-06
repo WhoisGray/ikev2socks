@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # If deb.debian.org is blocked on your network, uncomment to use a mirror:
+      # args:
+      #   APT_MIRROR: http://mirror.arvancloud.ir/debian
     container_name: ikev2socks
     network_mode: host  # IPSec (UDP 500/4500) needs host network so server replies reach the container
     cap_add:

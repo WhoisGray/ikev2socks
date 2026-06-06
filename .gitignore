@@ -1,0 +1,3 @@
+# Local VPN config & credentials — never commit these
+ipsec.conf
+ipsec.secrets
